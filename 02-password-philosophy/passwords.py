@@ -24,6 +24,17 @@ def part_one_valid(policy, password):
     pattern = policy_pattern(policy)
     return pattern.match(password)
     
+def part_two_valid(policy, password):
+    (letter, first_position, second_position) = parse_policy(policy)
+    # convert to zero-based indices
+    first_position = int(first_position) - 1
+    second_position = int(second_position) - 1
+    # check both positions
+    in_first = password[first_position] == letter
+    in_second = password[second_position] == letter
+
+    # valid if one or the other but not both positions have the letter
+    return (in_first or in_second) and not (in_first and in_second)
 
 def main():
     valid_count = 0
@@ -31,7 +42,7 @@ def main():
 
     for line in input():
         (policy, _, password) = line.partition(': ')
-        if part_one_valid(policy, password):
+        if part_two_valid(policy, password):
             valid_count += 1
         total_count += 1
 
