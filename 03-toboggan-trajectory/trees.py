@@ -44,11 +44,13 @@ def main():
 
     tree_field = TreeField(tree_field)
 
-    x_stride = 3
-    y_stride = 1
-    trees_encountered = tree_field.traverse(x_stride, y_stride)
+    slopes_to_test = [(1,1), (3,1), (5,1), (7,1), (1,2)]
 
-    print(f"Encountered {trees_encountered} trees")
+    product = 1
+    for x_stride, y_stride in slopes_to_test:
+        product *= tree_field.traverse(x_stride, y_stride)
+
+    print(product)
 
 if __name__ == '__main__':
     main()
