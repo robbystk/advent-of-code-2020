@@ -7,6 +7,33 @@ def input():
         for line in f:
             yield line
 
+class TreeField:
+    def __init__(self, array):
+        self.tree_field = np.array(array)
+
+    def has_tree(self, x, y):
+        return self.tree_field[y, x]
+
+    def height(self):
+        return self.tree_field.shape[0]
+
+    def width(self):
+        return self.tree_field.shape[1]
+
+    def traverse(self, x_stride, y_stride):
+        x_pos, y_pos = 0, 0
+        trees_encountered = 0
+        while y_pos < self.height():
+            if self.has_tree(x_pos,y_pos):
+                trees_encountered += 1
+            y_pos += y_stride
+            x_pos = (x_pos + x_stride) % self.width()
+        return trees_encountered
+
+
+    def __repr__(self):
+        return '\n'.join([''.join(['#' if self.has_tree(x,y) else '.' for x in range(self.width())]) for y in range(self.height())])
+
 def main():
     tree_field = []
     for line in input():
@@ -15,21 +42,11 @@ def main():
             row.append(c == '#')
         tree_field.append(row)
 
-    tree_field = np.array(tree_field)
-    height, width = tree_field.shape
+    tree_field = TreeField(tree_field)
 
-    # s = '\n'.join([''.join(['#' if tree_field[i,j] else '.' for j in range(width)]) for i in range(height)])
-
-    x_pos = 0
-    y_pos = 0
     x_stride = 3
     y_stride = 1
-    trees_encountered = 0
-    while y_pos < height:
-        if tree_field[y_pos, x_pos]:
-            trees_encountered += 1
-        y_pos += y_stride
-        x_pos = (x_pos + x_stride) % width
+    trees_encountered = tree_field.traverse(x_stride, y_stride)
 
     print(f"Encountered {trees_encountered} trees")
 
