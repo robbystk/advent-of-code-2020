@@ -6,7 +6,7 @@ def input():
             yield line
 
 def main():
-    max_seat_id = 0
+    seat_ids = []
     for line in input():
         row_code = line[0:7]
         column_code = line[7:10]
@@ -18,11 +18,15 @@ def main():
         col_num = int(col_num, 2)
 
         seat_id = row_num * 8 + col_num
+        seat_ids.append(seat_id)
 
-        if seat_id > max_seat_id:
-            max_seat_id = seat_id
+    seat_ids.sort()
 
-    print(max_seat_id)
+    for i in range(len(seat_ids) - 1):
+        delta = seat_ids[i+1] - seat_ids[i]
+        if delta == 2:
+            print(seat_ids[i] + 1)
+            break
 
 if __name__ == '__main__':
     main()
