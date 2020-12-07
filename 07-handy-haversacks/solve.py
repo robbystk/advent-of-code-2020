@@ -23,6 +23,18 @@ def paths_to_color(rule_list, starting_color, desired_color):
                 rv.append(path)
     return rv
 
+def bags_inside(rule_list, starting_color):
+    rv = 0
+    for content in rule_list[starting_color]:
+        number = content[0]
+        color = content[1]
+
+        if color is None or number == 0:
+            next
+        else:
+            rv += number * (bags_inside(rule_list, color) + 1)
+    return rv
+
 def main():
     rule_pattern = re.compile('\A(\d+) (.+) bags?\.?\Z')
 
@@ -36,7 +48,7 @@ def main():
                 contents.append((0, None))
             else:
                 matches = rule_pattern.match(rule)
-                number = matches.group(1)
+                number = int(matches.group(1))
                 color = matches.group(2)
                 contents.append((number, color))
 
@@ -54,7 +66,9 @@ def main():
     for path in paths:
         starting_colors.add(path[-1])
 
-    print(len(starting_colors))
+    # print(len(starting_colors))
+
+    print(bags_inside(luggage_rules, 'shiny gold'))
 
 if __name__ == '__main__':
     main()
