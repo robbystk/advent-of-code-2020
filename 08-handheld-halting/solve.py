@@ -1,6 +1,7 @@
 import sys
 
 import re
+import copy
 
 def input():
     with open(sys.argv[1]) as f:
@@ -36,6 +37,16 @@ class Instruction:
             state.program_counter += self.value
         else:
             raise f'Unknown action {self.action}'
+
+    def mutate(self):
+        if self.action == 'nop':
+            self.action = 'jmp'
+        elif self.action == 'jmp':
+            self.action = 'nop'
+        elif self.action == 'acc':
+            pass
+        else:
+            raise f'Unknown action {self.action}'
         
 
 class State:
@@ -44,6 +55,7 @@ class State:
         self.program_counter = 0
         self.accumulator = 0
         self.executed_previously = [False for _ in instruction_sequence]
+        self.pc_limit = len(instruction_sequence)
 
     def current_instruction(self):
         return self.instruction_sequence[self.program_counter]
@@ -56,14 +68,17 @@ class State:
         return f'State {{ program_counter: {self.program_counter}, accumulator: {self.accumulator} }}'
 
     def run_until_repeat(self):
-        run = True
-        while run:
+        repeated = False
+        while self.program_counter < self.pc_limit and not repeated:
+            if self.current_instruction() is None:
+                print(self.program_counter, self.pc_limit)
+
             if self.executed_previously[self.program_counter]:
-                run = False
+                repeated = True
             else:
                 self.step()
 
-        return self.accumulator
+        return (self.program_counter >= self.pc_limit, self.accumulator)
 
 def main():
     instruction_sequence = []
@@ -74,9 +89,18 @@ def main():
 
     state = State(instruction_sequence)
     acc_at_loop = state.run_until_repeat()
-    print(state)
 
     print(acc_at_loop)
+
+    for i, _ in enumerate(instruction_sequence):
+        new_seq = copy.deepcopy(instruction_sequence)
+        new_seq[i].mutate()
+
+        state = State(new_seq)
+        terminated, acc = state.run_until_repeat()
+        if terminated:
+            print(acc)
+            break
 
 if __name__ == '__main__':
     main()
