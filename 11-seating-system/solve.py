@@ -21,6 +21,7 @@ class SeatingArea:
         self.seat_config = seat_configuration
         self.n_rows = len(self.seat_config)
         self.n_cols = len(self.seat_config[0])
+        self.neighbor_cache = [[None for seat in row] for row in self.seat_config]
 
     def is_occupied(self, i, j):
         return self.seat_config[i][j] == '#'
@@ -28,14 +29,29 @@ class SeatingArea:
     def is_seat(self, i, j):
         return self.seat_config[i][j] != '.'
 
-    def count_occupied_neighbors(self, i, j):
-        occupied_neighbors = 0
+    def find_neighbor_coords(self, i, j):
+        coords = []
         for di in [-1, 0, 1]:
             if i + di >= 0 and i + di < self.n_rows:
                 for dj in [-1, 0, 1]:
                     if j+dj >= 0 and j+dj < self.n_cols:
-                        if self.is_occupied(i+di, j+dj):
-                            occupied_neighbors += 1
+                        coords.append((i+di, j+dj))
+        return coords
+
+    def neighbor_coords(self, i, j):
+        cache = self.neighbor_cache[i][j]
+        if cache is None:
+            self.neighbor_cache[i][j] = cache
+            cache = self.find_neighbor_coords(i, j)
+            return cache
+        else:
+            return cache
+
+    def count_occupied_neighbors(self, i, j):
+        occupied_neighbors = 0
+        for ni, nj in self.neighbor_coords(i,j):
+            if self.is_occupied(ni, nj):
+                occupied_neighbors += 1
         return occupied_neighbors
 
     def __repr__(self):
