@@ -31,11 +31,22 @@ class SeatingArea:
 
     def find_neighbor_coords(self, i, j):
         coords = []
-        for di in [-1, 0, 1]:
-            if i + di >= 0 and i + di < self.n_rows:
-                for dj in [-1, 0, 1]:
-                    if j+dj >= 0 and j+dj < self.n_cols:
+        # search in each direction in turn
+        #
+        #  6 5 4
+        #  7 . 3
+        #  8 1 2
+        #
+        for direction_i, direction_j in zip([+1, +1, 0, -1, -1, -1, 0, +1], [0, +1, +1, +1, 0, -1, -1, -1]):
+                di = direction_i
+                dj = direction_j
+                while i + di >= 0 and i + di < self.n_rows and j+dj >= 0 and j+dj < self.n_cols:
+                    if self.is_seat(i + di, j + dj):
                         coords.append((i+di, j+dj))
+                        break
+                    else:
+                        di += direction_i
+                        dj += direction_j
         return coords
 
     def neighbor_coords(self, i, j):
