@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use std::error::Error;
 use std::fmt;
 use std::num::ParseIntError;
 
