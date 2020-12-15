@@ -93,19 +93,19 @@ fn main() {
     let instructions = input.split('\n').filter(|i| !i.is_empty()).map(|s| s.parse().unwrap()).collect::<Vec<Instruction>>();
 
     let mut position = (0, 0);
-    let mut orientation = (1, 0);   // east
+    let mut waypoint = (10, 1);   // relative from ship
 
     for i in instructions {
         match i.action {
-            Action::N => position.1 += i.distance,
-            Action::S => position.1 -= i.distance,
-            Action::E => position.0 += i.distance,
-            Action::W => position.0 -= i.distance,
-            Action::L => orientation = (int_cos(i.distance) * orientation.0 - int_sin(i.distance) * orientation.1, int_sin(i.distance) * orientation.0 + int_cos(i.distance) * orientation.1),
-            Action::R => orientation = (int_cos(i.distance) * orientation.0 + int_sin(i.distance) * orientation.1, int_cos(i.distance) * orientation.1 - int_sin(i.distance) * orientation.0),
+            Action::N => waypoint.1 += i.distance,
+            Action::S => waypoint.1 -= i.distance,
+            Action::E => waypoint.0 += i.distance,
+            Action::W => waypoint.0 -= i.distance,
+            Action::L => waypoint = (int_cos(i.distance) * waypoint.0 - int_sin(i.distance) * waypoint.1, int_sin(i.distance) * waypoint.0 + int_cos(i.distance) * waypoint.1),
+            Action::R => waypoint = (int_cos(i.distance) * waypoint.0 + int_sin(i.distance) * waypoint.1, int_cos(i.distance) * waypoint.1 - int_sin(i.distance) * waypoint.0),
             Action::F => {
-                position.0 += i.distance * orientation.0;
-                position.1 += i.distance * orientation.1;
+                position.0 += i.distance * waypoint.0;
+                position.1 += i.distance * waypoint.1;
             }
         };
         // println!("({}, {}), ({}, {})", position.0, position.1, orientation.0, orientation.1);
