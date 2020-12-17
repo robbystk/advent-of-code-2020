@@ -4,18 +4,26 @@ def input
   ARGV[0]
 end
 
-numbers = input.split(',').map(&:to_i)
-previously_said = Set.new(numbers[..-2])
+starting_numbers = input.split(',').map(&:to_i)
 
-(2020 - numbers.length).times do
-  number_to_say = if previously_said.include? numbers.last
-                    last_said = numbers[0..-2].rindex numbers.last
-                    numbers.length - 1 - last_said
+previously_said = {}
+starting_numbers[..-2].each_with_index do |n, i|
+  previously_said[n] = i + 1
+end
+
+LIMIT = 10
+
+last_said = starting_numbers.last
+turn = starting_numbers.length
+while turn < LIMIT do
+  number_to_say = if previously_said.include? last_said
+                    turn - previously_said[last_said]
                   else
                     0
                   end
-    previously_said.add numbers.last
-    numbers << number_to_say
+  previously_said[last_said] = turn
+  last_said = number_to_say
+  turn += 1
 end
 
-puts numbers.last
+puts last_said
