@@ -1,3 +1,5 @@
+use std::fmt;
+
 fn input() -> String {
     let input_filename = &std::env::args().collect::<Vec<String>>()[1];
     std::fs::read_to_string(input_filename).unwrap()
@@ -27,7 +29,6 @@ fn tokenize_line(input: &str) -> Vec<Token> {
     return rv;
 }
 
-#[derive(Debug)]
 enum Expression {
     Value(u64),
     Operation(Box<Operation>)
@@ -44,13 +45,34 @@ impl Expression {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+impl fmt::Debug for Expression {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Expression::*;
+
+        match self {
+            Value(n) => write!(&mut f, "{:?}", n),
+            Operation(oper) => write!(&mut f, "{:?}", oper)
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
 enum Operator {
     Plus,
     Times
 }
 
-#[derive(Debug)]
+impl fmt::Debug for Operator {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Operator::*;
+
+        match self {
+            Plus => write!(&mut f, "+"),
+            Times => write!(&mut f, "*")
+        }
+    }
+}
+
 struct Operation {
     operator: Operator,
     lhs: Expression,
@@ -65,6 +87,12 @@ impl Operation {
             Plus => self.lhs.eval() + self.rhs.eval(),
             Times => self.lhs.eval() * self.rhs.eval()
         }
+    }
+}
+
+impl fmt::Debug for Operation {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(&mut f, "({:?} {:?} {:?})", self.operator, self.lhs, self.rhs)
     }
 }
 
@@ -149,7 +177,9 @@ fn main() {
     let parsed = expressions.iter().map(parse_expression).collect::<Vec<_>>();
     println!("parsed: {:?}", parsed);
 
-    let sum: u64 = parsed.iter().map(|e| e.eval()).sum();
+    let evaluated = parsed.iter().map(|e| e.eval()).collect::<Vec<_>>();
+    println!("evaluated: {:?}", evaluated);
 
-    println!("{}", sum);
+    let sum: u64 = evaluated.iter().sum();
+    println!("sum: {}", sum);
 }
