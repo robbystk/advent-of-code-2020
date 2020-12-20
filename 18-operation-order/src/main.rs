@@ -107,23 +107,24 @@ fn parse_expression(tokens: &Vec<Token>) -> Expression {
 
         match current_token {
             Some(Token::Value(n)) => {
-                match token_stack.pop() {
-                    Some(Token::Operator(oper)) => {
-                        let lhs = expression_stack.pop().unwrap();
-                        expression_stack.push(Expression::Operation(Box::new(Operation {
-                            operator: oper,
-                            lhs: lhs,
-                            rhs: Expression::Value(*n)
-                        })));
-                    },
-                    None => {
-                        expression_stack.push(Expression::Value(*n))
-                    },
-                    Some(Token::OParen) => {
-                        token_stack.push(Token::OParen);
-                        expression_stack.push(Expression::Value(*n));
+                expression_stack.push(Expression::Value(*n));
+
+                let mut last_token = token_stack.last().map(|t| *t);
+                loop {
+                    match last_token {
+                        Some(Token::Operator(Operator::Plus)) => {
+                            token_stack.pop();
+                            let rhs = expression_stack.pop().unwrap();
+                            let lhs = expression_stack.pop().unwrap();
+                            expression_stack.push(Expression::Operation(Box::new(Operation {
+                                operator: Operator::Plus,
+                                lhs: lhs,
+                                rhs: rhs
+                            })));
+                            last_token = token_stack.last().map(|t| *t);
+                        },
+                        _ => break
                     }
-                    Some(Token::Value(_)) | Some(Token::CParen) => panic!("syntax error")
                 }
             }
             Some(Token::Operator(oper)) => {
@@ -133,12 +134,8 @@ fn parse_expression(tokens: &Vec<Token>) -> Expression {
                 token_stack.push(Token::OParen);
             },
             Some(Token::CParen) => {
-                match token_stack.pop() {
-                    Some(Token::OParen) => {},
-                    _ => panic!("Syntax error: unmatched parentheses")
-                }
-
                 let mut last_token = token_stack.last().map(|t| *t);
+                // pop operators until we get to the corresponding parenthesis
                 loop {
                     match last_token {
                         Some(Token::Operator(oper)) => {
@@ -147,6 +144,28 @@ fn parse_expression(tokens: &Vec<Token>) -> Expression {
                             let lhs = expression_stack.pop().unwrap();
                             expression_stack.push(Expression::Operation(Box::new(Operation {
                                 operator: oper,
+                                lhs: lhs,
+                                rhs: rhs
+                            })));
+                            last_token = token_stack.last().map(|t| *t);
+                        },
+                        Some(Token::OParen) => {
+                            token_stack.pop();
+                            last_token = token_stack.last().map(|t| *t);
+                            break;
+                        },
+                        _ => break
+                    }
+                }
+                // now pop only pluses
+                loop {
+                    match last_token {
+                        Some(Token::Operator(Operator::Plus)) => {
+                            token_stack.pop();
+                            let rhs = expression_stack.pop().unwrap();
+                            let lhs = expression_stack.pop().unwrap();
+                            expression_stack.push(Expression::Operation(Box::new(Operation {
+                                operator: Operator::Plus,
                                 lhs: lhs,
                                 rhs: rhs
                             })));
@@ -161,6 +180,21 @@ fn parse_expression(tokens: &Vec<Token>) -> Expression {
 
         // println!("expr: {:?}, token: {:?}", expression_stack, token_stack);
 
+    }
+
+    while expression_stack.len() > 1 {
+        match token_stack.pop() {
+            Some(Token::Operator(oper)) => {
+                let rhs = expression_stack.pop().unwrap();
+                let lhs = expression_stack.pop().unwrap();
+                expression_stack.push(Expression::Operation(Box::new(Operation {
+                    operator: oper,
+                    lhs: lhs,
+                    rhs: rhs
+                })));
+            },
+            t => panic!("don't know how to handle {:?}", t)
+        }
     }
 
     return expression_stack.pop().unwrap();
