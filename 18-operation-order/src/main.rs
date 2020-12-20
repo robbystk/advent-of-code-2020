@@ -3,7 +3,7 @@ fn input() -> String {
     std::fs::read_to_string(input_filename).unwrap()
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 enum Token {
     OParen,
     CParen,
@@ -105,9 +105,16 @@ fn parse_expression(tokens: &Vec<Token>) -> Expression {
                 token_stack.push(Token::OParen);
             },
             Some(Token::CParen) => {
-                if let Some(Token::OParen) = token_stack.pop() {
-                    match token_stack.pop() {
+                match token_stack.pop() {
+                    Some(Token::OParen) => {},
+                    _ => panic!("Syntax error: unmatched parentheses")
+                }
+
+                let mut last_token = token_stack.last().map(|t| *t);
+                loop {
+                    match last_token {
                         Some(Token::Operator(oper)) => {
+                            token_stack.pop();
                             let rhs = expression_stack.pop().unwrap();
                             let lhs = expression_stack.pop().unwrap();
                             expression_stack.push(Expression::Operation(Box::new(Operation {
@@ -115,13 +122,10 @@ fn parse_expression(tokens: &Vec<Token>) -> Expression {
                                 lhs: lhs,
                                 rhs: rhs
                             })));
+                            last_token = token_stack.last().map(|t| *t);
                         },
-                        Some(Token::OParen) => token_stack.push(Token::OParen),
-                        None => {}
-                        Some(t) => panic!("Syntax error: unexpected token {:?}", t),
+                        _ => break
                     }
-                } else {
-                    panic!("Syntax error: unmatched parentheses");
                 }
             }
             None => panic!("this is actually impossible")
