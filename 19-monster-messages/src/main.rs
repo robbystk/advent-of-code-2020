@@ -43,7 +43,8 @@ impl Rule {
     fn match_against(& self, rules: &Rules, mut chars: &mut std::str::Chars) -> bool {
         match self {
             Rule::Literal(c) => {
-                chars.next().unwrap() == *c
+                let next = chars.next();
+                next.is_some() && next.unwrap() == *c
             },
             Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &mut chars),
             Rule::Sequence(a, b) => a.match_against(&rules, &mut chars) && b.match_against(&rules, &mut chars),
@@ -182,6 +183,8 @@ fn main() {
     // println!("rules: {:?}\n\nmessages: {:?}", rules, messages);
 
     let valid = messages.iter().map(|msg| rules.match_against(&mut msg.chars())).collect::<Vec<_>>();
+
+    // println!("valid: {:?}", valid);
 
     let valid_count = valid.iter().filter(|i| **i).count();
 
