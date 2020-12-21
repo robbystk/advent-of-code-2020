@@ -80,7 +80,7 @@ impl FromStr for Rule {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut tokens = Vec::new();
 
-        let mut chars = s.chars();
+        let mut chars = s.chars().peekable();
 
         while let Some(c) = chars.next() {
             match c {
@@ -88,7 +88,14 @@ impl FromStr for Rule {
                     tokens.push(Token::Literal(chars.next().unwrap()));
                     break;
                 },
-                '0'..='9' => tokens.push(Token::Reference((c as usize) - 0x30)),
+                '0'..='9' => {
+                    let mut num_str = String::new();
+                    num_str.push(c);
+                    while let Some(true) = chars.peek().map(|c| c.is_ascii_digit()) {
+                        num_str.push(chars.next().unwrap());
+                    }
+                    tokens.push(Token::Reference(num_str.parse().unwrap()));
+                },
                 '|' => {
                     tokens.pop();
                     tokens.push(Token::Or);
