@@ -23,6 +23,12 @@ impl Rules {
 
         self.rules.insert(num_str.parse().unwrap(), pattern.parse().unwrap());
     }
+
+    fn match_against(& self, mut chars: &mut std::str::Chars) -> bool {
+        let top_rule = self.rules.get(&0).unwrap();
+        let matches = top_rule.match_against(&self, &mut chars);
+        matches && chars.next().is_none()
+    }
 }
 
 #[derive(Debug)]
@@ -31,6 +37,38 @@ enum Rule {
     Alternative(Box<Rule>, Box<Rule>),
     Literal(char),
     Reference(usize),
+}
+
+impl Rule {
+    fn match_against(& self, rules: &Rules, mut chars: &mut std::str::Chars) -> bool {
+        // let to_go = chars.as_str();
+        // println!("matching {:?} against {}", self, to_go);
+        match self {
+            Rule::Literal(c) => {
+                let next = chars.next().unwrap();
+                if next == *c {
+                    // println!("matched {}", c);
+                    true
+                } else {
+                    // println!("wanted {}, got {}", c, next);
+                    false
+                }
+            },
+            Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &mut chars),
+            Rule::Sequence(a, b) => a.match_against(&rules, &mut chars) && b.match_against(&rules, &mut chars),
+            Rule::Alternative(a, b) => {
+                // store the state in case we need to go back
+                let backup = chars.as_str();
+                if a.match_against(&rules, &mut backup.chars()) {
+                    // match again to advance chars
+                    // not the best way to do it
+                    a.match_against(&rules, &mut chars)
+                } else {
+                    b.match_against(&rules, &mut chars)
+                }
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -143,5 +181,11 @@ fn main() {
         }
     }
 
-    println!("rules: {:?}\n\nmessages: {:?}", rules, messages);
+    // println!("rules: {:?}\n\nmessages: {:?}", rules, messages);
+
+    let valid = messages.iter().map(|msg| rules.match_against(&mut msg.chars())).collect::<Vec<_>>();
+
+    let valid_count = valid.iter().filter(|i| **i).count();
+
+    println!("valid: {:?}", valid_count);
 }
