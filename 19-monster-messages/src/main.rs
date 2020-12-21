@@ -41,18 +41,9 @@ enum Rule {
 
 impl Rule {
     fn match_against(& self, rules: &Rules, mut chars: &mut std::str::Chars) -> bool {
-        // let to_go = chars.as_str();
-        // println!("matching {:?} against {}", self, to_go);
         match self {
             Rule::Literal(c) => {
-                let next = chars.next().unwrap();
-                if next == *c {
-                    // println!("matched {}", c);
-                    true
-                } else {
-                    // println!("wanted {}, got {}", c, next);
-                    false
-                }
+                chars.next().unwrap() == *c
             },
             Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &mut chars),
             Rule::Sequence(a, b) => a.match_against(&rules, &mut chars) && b.match_against(&rules, &mut chars),
