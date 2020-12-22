@@ -24,9 +24,10 @@ impl Rules {
         self.rules.insert(num_str.parse().unwrap(), pattern.parse().unwrap());
     }
 
-    fn match_against(& self, mut chars: &mut std::str::Chars) -> bool {
+    fn match_against(& self, s: &str) -> bool {
+        let mut chars = s.chars().peekable();
         let top_rule = self.rules.get(&0).unwrap();
-        let matches = top_rule.match_against(&self, &mut chars);
+        let matches = top_rule.match_against(&self, &mut chars, true);
         matches && chars.next().is_none()
     }
 }
@@ -40,23 +41,48 @@ enum Rule {
 }
 
 impl Rule {
-    fn match_against(& self, rules: &Rules, mut chars: &mut std::str::Chars) -> bool {
+    fn match_against(& self, rules: &Rules, mut chars: &mut std::iter::Peekable<std::str::Chars>, should_reach_end: bool) -> bool {
+        println!("matching {:?} against {:?}", self, chars);
         match self {
             Rule::Literal(c) => {
                 let next = chars.next();
-                next.is_some() && next.unwrap() == *c
+                let matched = next.is_some() && next.unwrap() == *c;
+                let reached_end = chars.peek().is_none();
+
+                let match_msg = if matched {
+                    format!("matched {}", c)
+                } else {
+                    format!("wanted {}, got {:?}", c, next)
+                };
+                let end_condition_message = if should_reach_end {
+                    "wanted to reach end"
+                } else {
+                    "did not want to reach end"
+                };
+                let end_reached_message = if reached_end {
+                    "reached end"
+                } else {
+                    "did not reach end"
+                };
+                println!("{}; {}, and {}", match_msg, end_condition_message, end_reached_message);
+
+                if should_reach_end {
+                    next.is_some() && next.unwrap() == *c && chars.peek().is_none()
+                } else {
+                    next.is_some() && next.unwrap() == *c && chars.peek().is_some()
+                }
             },
-            Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &mut chars),
-            Rule::Sequence(a, b) => a.match_against(&rules, &mut chars) && b.match_against(&rules, &mut chars),
+            Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &mut chars, should_reach_end),
+            Rule::Sequence(a, b) => a.match_against(&rules, &mut chars, false) && b.match_against(&rules, &mut chars, should_reach_end),
             Rule::Alternative(a, b) => {
                 // store the state in case we need to go back
-                let backup = chars.as_str();
-                if a.match_against(&rules, &mut backup.chars()) {
+                let backup = chars.copy();
+                if a.match_against(&rules, &mut backup, should_reach_end) {
                     // match again to advance chars
                     // not the best way to do it
-                    a.match_against(&rules, &mut chars)
+                    a.match_against(&rules, &mut chars, should_reach_end)
                 } else {
-                    b.match_against(&rules, &mut chars)
+                    b.match_against(&rules, &mut chars, should_reach_end)
                 }
             }
         }
@@ -182,7 +208,7 @@ fn main() {
 
     // println!("rules: {:?}\n\nmessages: {:?}", rules, messages);
 
-    let valid = messages.iter().map(|msg| rules.match_against(&mut msg.chars())).collect::<Vec<_>>();
+    let valid = messages.iter().map(|msg| rules.match_against(&msg)).collect::<Vec<_>>();
 
     // println!("valid: {:?}", valid);
 
