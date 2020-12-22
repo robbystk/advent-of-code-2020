@@ -25,10 +25,14 @@ impl Rules {
     }
 
     fn match_against(& self, s: &str) -> bool {
-        let mut chars = s.chars().peekable();
         let top_rule = self.rules.get(&0).unwrap();
-        let matches = top_rule.match_against(&self, &mut chars, true);
-        matches && chars.next().is_none()
+
+        // setup
+        let chars = s.chars().collect::<Vec<_>>();
+        let mut index = 0 as usize;
+
+        let matches = top_rule.match_against(&self, &chars, &mut index, true);
+        matches && index == chars.len()
     }
 }
 
@@ -41,18 +45,25 @@ enum Rule {
 }
 
 impl Rule {
-    fn match_against(& self, rules: &Rules, mut chars: &mut std::iter::Peekable<std::str::Chars>, should_reach_end: bool) -> bool {
-        println!("matching {:?} against {:?}", self, chars);
+    fn match_against(& self, rules: &Rules, chars: &Vec<char>, from_index: &mut usize, should_reach_end: bool) -> bool {
+        let to_go = &chars[*from_index..];
+        println!("matching {:?} against {:?}", self, to_go);
         match self {
             Rule::Literal(c) => {
-                let next = chars.next();
-                let matched = next.is_some() && next.unwrap() == *c;
-                let reached_end = chars.peek().is_none();
+                if *from_index >= chars.len() {
+                    return false;
+                }
+                let current = chars[*from_index];
+                let matched = current == *c;
+                if matched {
+                    *from_index += 1;
+                }
+                let reached_end = *from_index == chars.len();
 
                 let match_msg = if matched {
                     format!("matched {}", c)
                 } else {
-                    format!("wanted {}, got {:?}", c, next)
+                    format!("wanted {}, got {:?}", c, current)
                 };
                 let end_condition_message = if should_reach_end {
                     "wanted to reach end"
@@ -67,22 +78,21 @@ impl Rule {
                 println!("{}; {}, and {}", match_msg, end_condition_message, end_reached_message);
 
                 if should_reach_end {
-                    next.is_some() && next.unwrap() == *c && chars.peek().is_none()
+                    matched && reached_end
                 } else {
-                    next.is_some() && next.unwrap() == *c && chars.peek().is_some()
+                    matched
                 }
             },
-            Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &mut chars, should_reach_end),
-            Rule::Sequence(a, b) => a.match_against(&rules, &mut chars, false) && b.match_against(&rules, &mut chars, should_reach_end),
+            Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &chars, from_index, should_reach_end),
+            Rule::Sequence(a, b) => a.match_against(&rules, &chars, from_index, false) && b.match_against(&rules, &chars, from_index, should_reach_end),
             Rule::Alternative(a, b) => {
                 // store the state in case we need to go back
-                let backup = chars.copy();
-                if a.match_against(&rules, &mut backup, should_reach_end) {
-                    // match again to advance chars
-                    // not the best way to do it
-                    a.match_against(&rules, &mut chars, should_reach_end)
+                let backup_index = *from_index;
+                if a.match_against(&rules, &chars, from_index, should_reach_end) {
+                    true
                 } else {
-                    b.match_against(&rules, &mut chars, should_reach_end)
+                    *from_index = backup_index;
+                    b.match_against(&rules, &chars, from_index, should_reach_end)
                 }
             }
         }
