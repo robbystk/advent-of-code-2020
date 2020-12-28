@@ -46,8 +46,8 @@ enum Rule {
 
 impl Rule {
     fn match_against(& self, rules: &Rules, chars: &Vec<char>, from_index: &mut usize, should_reach_end: bool) -> bool {
-        let to_go = &chars[*from_index..];
-        println!("matching {:?} against {:?}", self, to_go);
+        // let to_go = &chars[*from_index..];
+        // println!("matching {:?} against {:?}", self, to_go);
         match self {
             Rule::Literal(c) => {
                 if *from_index >= chars.len() {
@@ -75,7 +75,7 @@ impl Rule {
                 } else {
                     "did not reach end"
                 };
-                println!("{}; {}, and {}", match_msg, end_condition_message, end_reached_message);
+                // println!("{}; {}, and {}", match_msg, end_condition_message, end_reached_message);
 
                 if should_reach_end {
                     matched && reached_end
@@ -218,11 +218,11 @@ fn main() {
 
     // println!("rules: {:?}\n\nmessages: {:?}", rules, messages);
 
-    let valid = messages.iter().map(|msg| rules.match_against(&msg)).collect::<Vec<_>>();
+    let valid_messages = messages.iter().filter(|msg| rules.match_against(&msg)).collect::<Vec<_>>();
 
-    // println!("valid: {:?}", valid);
+    println!("valid: {:?}", valid_messages);
 
-    let valid_count = valid.iter().filter(|i| **i).count();
+    let valid_count = valid_messages.len();
 
     println!("valid: {:?}", valid_count);
 }
