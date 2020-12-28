@@ -29,10 +29,10 @@ impl Rules {
 
         // setup
         let chars = s.chars().collect::<Vec<_>>();
-        let mut index = 0 as usize;
+        let mut index = chars.len();
 
         let matches = top_rule.match_against(&self, &chars, &mut index, true);
-        matches && index == chars.len()
+        matches && index == 0 as usize
     }
 }
 
@@ -46,19 +46,19 @@ enum Rule {
 
 impl Rule {
     fn match_against(& self, rules: &Rules, chars: &Vec<char>, from_index: &mut usize, should_reach_end: bool) -> bool {
-        // let to_go = &chars[*from_index..];
+        // let to_go = &chars[..*from_index];
         // println!("matching {:?} against {:?}", self, to_go);
         match self {
             Rule::Literal(c) => {
-                if *from_index >= chars.len() {
+                if *from_index <= 0 as usize {
                     return false;
                 }
-                let current = chars[*from_index];
+                let current = chars[*from_index - 1];
                 let matched = current == *c;
                 if matched {
-                    *from_index += 1;
+                    *from_index -= 1;
                 }
-                let reached_end = *from_index == chars.len();
+                let reached_end = *from_index == 0 as usize;
 
                 let match_msg = if matched {
                     format!("matched {}", c)
@@ -84,7 +84,7 @@ impl Rule {
                 }
             },
             Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &chars, from_index, should_reach_end),
-            Rule::Sequence(a, b) => a.match_against(&rules, &chars, from_index, false) && b.match_against(&rules, &chars, from_index, should_reach_end),
+            Rule::Sequence(a, b) => b.match_against(&rules, &chars, from_index, false) && a.match_against(&rules, &chars, from_index, should_reach_end),
             Rule::Alternative(a, b) => {
                 // store the state in case we need to go back
                 let backup_index = *from_index;
