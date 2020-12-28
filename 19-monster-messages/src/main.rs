@@ -27,12 +27,28 @@ impl Rules {
     fn match_against(& self, s: &str) -> bool {
         let top_rule = self.rules.get(&0).unwrap();
 
-        // setup
-        let chars = s.chars().collect::<Vec<_>>();
-        let mut index = chars.len();
+        match top_rule {
+            Rule::Sequence(a, b) => {
+                // setup
+                let chars = s.chars().collect::<Vec<_>>();
+                let mut right_index = chars.len();
 
-        let matches = top_rule.match_against(&self, &chars, &mut index, true);
-        matches && index == 0 as usize
+                let right_matches = b.rmatch_against(&self, &chars, &mut right_index, false);
+
+                // println!("{}", right_matches);
+
+                if right_matches {
+                    let remainder = chars[..right_index].to_owned();
+                    let mut left_index = 0;
+                    let left_matches = a.match_against(&self, &remainder, &mut left_index, true);
+                    // println!("{}, {}", left_index, right_index);
+                    return right_matches && left_matches && left_index == right_index;
+                } else {
+                    return false
+                }
+            },
+            _ => panic!("don't know how to deal with top rule {:?}", top_rule)
+        }
     }
 }
 
@@ -46,6 +62,59 @@ enum Rule {
 
 impl Rule {
     fn match_against(& self, rules: &Rules, chars: &Vec<char>, from_index: &mut usize, should_reach_end: bool) -> bool {
+        // let to_go = &chars[*from_index..];
+        // println!("matching {:?} against {:?}", self, to_go);
+        match self {
+            Rule::Literal(c) => {
+                if *from_index >= chars.len() {
+                    return false;
+                }
+                let current = chars[*from_index];
+                let matched = current == *c;
+                if matched {
+                    *from_index += 1;
+                }
+                let reached_end = *from_index == chars.len();
+
+                let match_msg = if matched {
+                    format!("matched {}", c)
+                } else {
+                    format!("wanted {}, got {:?}", c, current)
+                };
+                let end_condition_message = if should_reach_end {
+                    "wanted to reach end"
+                } else {
+                    "did not want to reach end"
+                };
+                let end_reached_message = if reached_end {
+                    "reached end"
+                } else {
+                    "did not reach end"
+                };
+                // println!("{}; {}, and {}", match_msg, end_condition_message, end_reached_message);
+
+                if should_reach_end {
+                    matched && reached_end
+                } else {
+                    matched
+                }
+            },
+            Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &chars, from_index, should_reach_end),
+            Rule::Sequence(a, b) => a.match_against(&rules, &chars, from_index, false) && b.match_against(&rules, &chars, from_index, should_reach_end),
+            Rule::Alternative(a, b) => {
+                // store the state in case we need to go back
+                let backup_index = *from_index;
+                if a.match_against(&rules, &chars, from_index, should_reach_end) {
+                    true
+                } else {
+                    *from_index = backup_index;
+                    b.match_against(&rules, &chars, from_index, should_reach_end)
+                }
+            }
+        }
+    }
+
+    fn rmatch_against(& self, rules: &Rules, chars: &Vec<char>, from_index: &mut usize, should_reach_end: bool) -> bool {
         // let to_go = &chars[..*from_index];
         // println!("matching {:?} against {:?}", self, to_go);
         match self {
@@ -83,16 +152,16 @@ impl Rule {
                     matched
                 }
             },
-            Rule::Reference(n) => rules.rules.get(&n).unwrap().match_against(&rules, &chars, from_index, should_reach_end),
-            Rule::Sequence(a, b) => b.match_against(&rules, &chars, from_index, false) && a.match_against(&rules, &chars, from_index, should_reach_end),
+            Rule::Reference(n) => rules.rules.get(&n).unwrap().rmatch_against(&rules, &chars, from_index, should_reach_end),
+            Rule::Sequence(a, b) => b.rmatch_against(&rules, &chars, from_index, false) && a.rmatch_against(&rules, &chars, from_index, should_reach_end),
             Rule::Alternative(a, b) => {
                 // store the state in case we need to go back
                 let backup_index = *from_index;
-                if a.match_against(&rules, &chars, from_index, should_reach_end) {
+                if a.rmatch_against(&rules, &chars, from_index, should_reach_end) {
                     true
                 } else {
                     *from_index = backup_index;
-                    b.match_against(&rules, &chars, from_index, should_reach_end)
+                    b.rmatch_against(&rules, &chars, from_index, should_reach_end)
                 }
             }
         }
